@@ -1,6 +1,7 @@
 mealpy.human\_based package
 ===========================
 
+
 mealpy.human\_based.BRO module
 ------------------------------
 
@@ -49,6 +50,22 @@ mealpy.human\_based.GSKA module
    :undoc-members:
    :show-inheritance:
 
+mealpy.human\_based.HBO module
+------------------------------
+
+.. automodule:: mealpy.human_based.HBO
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mealpy.human\_based.HCO module
+------------------------------
+
+.. automodule:: mealpy.human_based.HCO
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mealpy.human\_based.ICA module
 ------------------------------
 
@@ -61,6 +78,14 @@ mealpy.human\_based.LCO module
 ------------------------------
 
 .. automodule:: mealpy.human_based.LCO
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mealpy.human\_based.PO module
+-----------------------------
+
+.. automodule:: mealpy.human_based.PO
    :members:
    :undoc-members:
    :show-inheritance:
@@ -81,6 +106,13 @@ mealpy.human\_based.SARO module
    :undoc-members:
    :show-inheritance:
 
+mealpy.human\_based.SPBO module
+-------------------------------
+
+.. automodule:: mealpy.human_based.SPBO
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 mealpy.human\_based.SSDO module
 -------------------------------
@@ -94,6 +126,22 @@ mealpy.human\_based.TLO module
 ------------------------------
 
 .. automodule:: mealpy.human_based.TLO
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mealpy.human\_based.TOA module
+------------------------------
+
+.. automodule:: mealpy.human_based.TOA
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mealpy.human\_based.WarSO module
+--------------------------------
+
+.. automodule:: mealpy.human_based.WarSO
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 14:01, 16/11/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -14,11 +14,6 @@ class OriginalFOA(Optimizer):
 
     Links:
         1. https://doi.org/10.1016/j.knosys.2011.07.001
-
-    Notes
-    ~~~~~
-        + This optimization can't apply to complicated objective function due to the norm distance
-        + This algorithm is the weakest algorithm in MHAs, that's why so many researchers produce papers based on this algorithm (Easy to improve, and easy to implement)
 
     Examples
     ~~~~~~~~
@@ -37,8 +32,8 @@ class OriginalFOA(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = OriginalFOA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalFOA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -47,17 +42,16 @@ class OriginalFOA(Optimizer):
     as an example. Knowledge-Based Systems, 26, pp.69-74.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size"])
         self.sort_flag = False
 
     def norm_consecutive_adjacent__(self, position=None):
@@ -87,7 +81,7 @@ class OriginalFOA(Optimizer):
         """
         pop_new = []
         for idx in range(0, self.pop_size):
-            pos_new = self.pop[idx][self.ID_POS] + np.random.normal(self.problem.lb, self.problem.ub)
+            pos_new = self.pop[idx][self.ID_POS] + np.random.rand() * np.random.normal(self.problem.lb, self.problem.ub)
             pos_new = self.norm_consecutive_adjacent__(pos_new)
             pos_new = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
             pop_new.append([pos_new, None])
@@ -101,7 +95,7 @@ class OriginalFOA(Optimizer):
 
 class BaseFOA(OriginalFOA):
     """
-    My changed version of: Fruit-fly Optimization Algorithm (FOA)
+    The developed version: Fruit-fly Optimization Algorithm (FOA)
 
     Notes
     ~~~~~
@@ -126,19 +120,18 @@ class BaseFOA(OriginalFOA):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = BaseFOA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = BaseFOA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, epoch, pop_size, **kwargs)
+        super().__init__(epoch, pop_size, **kwargs)
 
     def evolve(self, epoch):
         """
@@ -147,10 +140,11 @@ class BaseFOA(OriginalFOA):
         Args:
             epoch (int): The current iteration
         """
+        c = 1 - epoch / self.epoch
         pop_new = []
         for idx in range(0, self.pop_size):
-            pos_new = self.pop[idx][self.ID_POS] + np.random.normal(0, 1, self.problem.n_dims)
-            pos_new = np.random.normal() * self.norm_consecutive_adjacent__(pos_new)
+            pos_new = self.pop[idx][self.ID_POS] + np.random.normal(self.problem.lb, self.problem.ub)
+            pos_new = c * np.random.rand() * self.norm_consecutive_adjacent__(pos_new)
             pos_new = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
             pop_new.append([pos_new, None])
             if self.mode not in self.AVAILABLE_MODES:
@@ -185,8 +179,8 @@ class WhaleFOA(OriginalFOA):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = WhaleFOA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = WhaleFOA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -195,14 +189,13 @@ class WhaleFOA(OriginalFOA):
     fruit fly optimization and advances in real-world problems. Expert Systems with Applications, 159, p.113502.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, epoch, pop_size, **kwargs)
+        super().__init__(epoch, pop_size, **kwargs)
 
     def evolve(self, epoch):
         """

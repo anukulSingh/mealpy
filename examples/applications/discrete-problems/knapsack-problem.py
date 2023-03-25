@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 11:03, 29/11/2021 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -53,8 +53,8 @@ problem_dict1 = {
 }
 
 ## Run the algorithm
-model1 = MVO.OriginalMVO(problem_dict1, epoch=100, pop_size=50)
-best_position, best_fitness = model1.solve()
+model1 = MVO.OriginalMVO(epoch=100, pop_size=50)
+best_position, best_fitness = model1.solve(problem_dict1)
 print(f"Best solution: {best_position}, Best fitness: {best_fitness}")
 print(model1.solution[0].astype(int))
 

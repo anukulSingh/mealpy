@@ -57,3 +57,4 @@ mealpy.evolutionary\_based.MA module
    :members:
    :undoc-members:
    :show-inheritance:
+

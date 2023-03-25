@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 11:59, 17/03/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -10,9 +10,9 @@ from scipy.spatial.distance import cdist
 from mealpy.optimizer import Optimizer
 
 
-class BaseSSpiderA(Optimizer):
+class OriginalSSpiderA(Optimizer):
     """
-    My modified version of: Social Spider Algorithm (BaseSSpiderA)
+    The developed version of: Social Spider Algorithm (OriginalSSpiderA)
 
     Links:
         1. https://doi.org/10.1016/j.asoc.2015.02.014
@@ -31,7 +31,7 @@ class BaseSSpiderA(Optimizer):
     Examples
     ~~~~~~~~
     >>> import numpy as np
-    >>> from mealpy.swarm_based.SSpiderA import BaseSSpiderA
+    >>> from mealpy.swarm_based.SSpiderA import OriginalSSpiderA
     >>>
     >>> def fitness_function(solution):
     >>>     return np.sum(solution**2)
@@ -45,11 +45,11 @@ class BaseSSpiderA(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> r_a = 50
-    >>> p_c = 0.5
-    >>> p_m = 1.0
-    >>> model = BaseSSpiderA(problem_dict1, epoch, pop_size, r_a, p_c, p_m)
-    >>> best_position, best_fitness = model.solve()
+    >>> r_a = 1.0
+    >>> p_c = 0.7
+    >>> p_m = 0.1
+    >>> model = OriginalSSpiderA(epoch, pop_size, r_a, p_c, p_m)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -65,23 +65,22 @@ class BaseSSpiderA(Optimizer):
     ID_PREV_MOVE_VEC = 4
     ID_MASK = 5
 
-    def __init__(self, problem, epoch=10000, pop_size=100, r_a=1, p_c=0.7, p_m=0.1, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, r_a=1.0, p_c=0.7, p_m=0.1, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
             r_a (float): the rate of vibration attenuation when propagating over the spider web, default=1.0
             p_c (float): controls the probability of the spiders changing their dimension mask in the random walk step, default=0.7
             p_m (float): the probability of each value in a dimension mask to be one, default=0.1
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
         self.r_a = self.validator.check_float("r_a", r_a, (0, 5.0))
         self.p_c = self.validator.check_float("p_c", p_c, (0, 1.0))
         self.p_m = self.validator.check_float("p_m", p_m, (0, 1.0))
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size", "r_a", "p_c", "p_m"])
         self.sort_flag = False
 
     def create_solution(self, lb=None, ub=None, pos=None):
@@ -139,7 +138,9 @@ class BaseSSpiderA(Optimizer):
                       (self.pop[idx][self.ID_POS] - self.pop[idx][self.ID_PREV_MOVE_VEC]) + \
                       (pos_new - self.pop[idx][self.ID_POS]) * np.random.normal()
             agent[self.ID_POS] = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
-            pop_new.append(agent)
+            if self.mode not in self.AVAILABLE_MODES:
+                agent[self.ID_TAR] = self.get_target_wrapper(agent[self.ID_POS])
+                pop_new.append(agent)
         pop_new = self.update_target_wrapper_population(pop_new)
 
         for idx in range(0, self.pop_size):

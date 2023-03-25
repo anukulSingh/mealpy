@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 10:21, 17/03/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -14,12 +14,12 @@ class OriginalBFO(Optimizer):
     The original version of: Bacterial Foraging Optimization (BFO)
 
     Links:
-        1. http://www.cleveralgorithms.com/nature-inspired/swarm/bfoa.html
+        1. https://www.cleveralgorithms.com/nature-inspired/swarm/bfoa.html
 
     Notes
     ~~~~~
     + Ned and Nre parameters are replaced by epoch (generation)
-    + The Nc parameter will also decreased to reduce the computation time.
+    + The Nc parameter will also decrease to reduce the computation time.
     + Cost in this version equal to Fitness value in the paper.
 
     Hyper-parameters should fine-tune in approximate range to get faster convergence toward the global optimum:
@@ -29,7 +29,10 @@ class OriginalBFO(Optimizer):
         + Nre (int): reproduction_steps (Removed), Nre=50,
         + Nc (int): [3, 10], chem_steps (Reduce), Nc = Original Nc/2, default = 5
         + Ns (int): [2, 10], swim length, default=4
-        + attract_repels (list, tuple): coefficient to calculate attract and repel force, default = (0.1, 0.2, 0.1, 10)
+        + d_attract (float): coefficient to calculate attract force, default = 0.1
+        + w_attract (float): coefficient to calculate attract force, default = 0.2
+        + h_repels (float): coefficient to calculate repel force, default = 0.1
+        + w_repels (float): coefficient to calculate repel force, default = 10
 
     Examples
     ~~~~~~~~
@@ -52,9 +55,12 @@ class OriginalBFO(Optimizer):
     >>> Ped = 0.25
     >>> Nc = 5
     >>> Ns = 4
-    >>> attract_repels = [0.1, 0.2, 0.1, 10]
-    >>> model = OriginalBFO(problem_dict1, epoch, pop_size, Ci, Ped, Nc, Ns, attract_repels)
-    >>> best_position, best_fitness = model.solve()
+    >>> d_attract=0.1
+    >>> w_attract=0.2
+    >>> h_repels=0.1
+    >>> w_repels=10
+    >>> model = OriginalBFO(epoch, pop_size, Ci, Ped, Nc, Ns, d_attract, w_attract, h_repels, w_repels)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -69,11 +75,10 @@ class OriginalBFO(Optimizer):
     ID_INTER = 3
     ID_SUM_NUTRIENTS = 4
 
-    def __init__(self, problem, epoch=10000, pop_size=100,
-                 Ci=0.01, Ped=0.25, Nc=5, Ns=4, attract_repels=(0.1, 0.2, 0.1, 10), **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, Ci=0.01, Ped=0.25, Nc=5, Ns=4,
+                 d_attract=0.1, w_attract=0.2, h_repels=0.1, w_repels=10, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
             Ci (float): step size, default=0.01
@@ -82,20 +87,25 @@ class OriginalBFO(Optimizer):
             Nre (int): reproduction_steps (Removed)      Nre=50,
             Nc (int): chem_steps (Reduce)                Nc = Original Nc/2, default = 5
             Ns (int): swim_length, default=4
-            attract_repels (list, tuple): coefficient to calculate attract and repel force, default = (0.1, 0.2, 0.1, 10)
+            d_attract (float): coefficient to calculate attract force, default = 0.1
+            w_attract (float): coefficient to calculate attract force, default = 0.2
+            h_repels (float): coefficient to calculate repel force, default = 0.1
+            w_repels (float): coefficient to calculate repel force, default = 10
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
         self.step_size = self.Ci = self.validator.check_int("Ci", Ci, (0, 5.0))
         self.p_eliminate = self.Ped = self.validator.check_float("Ped", Ped, (0, 1.0))
         self.chem_steps = self.Nc = self.validator.check_int("Nc", Nc, [2, 100])
         self.swim_length = self.Ns = self.validator.check_int("Ns", Ns, [2, 100])
-        self.attract_repels = self.validator.check_tuple_float("attract_repels (d_attract, w_attract, h_repels, w_repels)",
-                    attract_repels, ((0, 1.0), (0, 1.0), (0, 1.0), (2, 20)))
-        self.d_attr, self.w_attr, self.h_rep, self.w_rep = self.attract_repels
+        self.d_attract = self.validator.check_float("d_attract", d_attract, (0, 1.0))
+        self.w_attract = self.validator.check_float("w_attract", w_attract, (0, 1.0))
+        self.h_repels = self.validator.check_float("h_repels", h_repels, (0, 1.0))
+        self.w_repels = self.validator.check_float("w_repels", w_repels, (2.0, 20.0))
+        self.set_parameters(["epoch", "pop_size", "Ci", "Ped", "Nc", "Ns", "d_attract", "w_attract", "h_repels", "w_repels"])
         self.half_pop_size = int(self.pop_size / 2)
-        self.nfe_per_epoch = self.pop_size
+        self.support_parallel_modes = False
         self.sort_flag = False
 
     def create_solution(self, lb=None, ub=None, pos=None):
@@ -122,8 +132,8 @@ class OriginalBFO(Optimizer):
         return sum_inter
 
     def attract_repel__(self, idx, cells):
-        attract = self.compute_cell_interaction__(cells[idx], cells, -self.d_attr, -self.w_attr)
-        repel = self.compute_cell_interaction__(cells[idx], cells, self.h_rep, -self.w_rep)
+        attract = self.compute_cell_interaction__(cells[idx], cells, -self.d_attract, -self.w_attract)
+        repel = self.compute_cell_interaction__(cells[idx], cells, self.h_repels, -self.w_repels)
         return attract + repel
 
     def evaluate__(self, idx, cells):
@@ -144,7 +154,6 @@ class OriginalBFO(Optimizer):
         Args:
             epoch (int): The current iteration
         """
-        nfe_epoch = 0
         for j in range(0, self.chem_steps):
             for idx in range(0, self.pop_size):
                 sum_nutrients = 0.0
@@ -157,7 +166,6 @@ class OriginalBFO(Optimizer):
                     pos_new = self.pop[idx][self.ID_POS] + self.step_size * unit_vector
                     pos_new = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
                     target = self.get_target_wrapper(pos_new)
-                    nfe_epoch += 1
                     if self.compare_agent([pos_new, target], self.pop[idx]):
                         self.pop[idx][self.ID_POS] = pos_new
                         self.pop[idx][self.ID_TAR] = target
@@ -171,24 +179,20 @@ class OriginalBFO(Optimizer):
             for idc in range(self.pop_size):
                 if np.random.rand() < self.p_eliminate:
                     self.pop[idc] = self.create_solution(self.problem.lb, self.problem.ub)
-                    nfe_epoch += 1
-        self.nfe_per_epoch = nfe_epoch
 
 
 class ABFO(Optimizer):
     """
     The original version of: Adaptive Bacterial Foraging Optimization (ABFO)
 
-    Notes
-    ~~~~~
-    + This is the best improvement version of BFO
-    + The population will remain the same length as initialization due to add and remove operators
-
     Hyper-parameters should fine-tune in approximate range to get faster convergence toward the global optimum:
-        + Ci (list): C_s (start), C_e (end)  -=> step size # step size in BFO, default=(0.1, 0.001)
+
+        + C_s (float): step size start, default=0.1
+        + C_e (float): step size end, default=0.001
         + Ped (float): Probability eliminate, default=0.01
         + Ns (int): swim_length, default=4
-        + N_minmax (list, tuple): (Dead threshold value, split threshold value), default=(2, 40)
+        + N_adapt (int): Dead threshold value default=2
+        + N_split (int): Split threshold value, default=40
 
     Examples
     ~~~~~~~~
@@ -207,12 +211,14 @@ class ABFO(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> Ci = [0.1, 0.001]
+    >>> C_s=0.1
+    >>> C_e=0.001
     >>> Ped = 0.01
     >>> Ns = 4
-    >>> N_minmax = [2, 40]
-    >>> model = ABFO(problem_dict1, epoch, pop_size, Ci, Ped, Ns, N_minmax)
-    >>> best_position, best_fitness = model.solve()
+    >>> N_adapt = 2
+    >>> N_split = 40
+    >>> model = ABFO(epoch, pop_size, C_s, C_e, Ped, Ns, N_adapt, N_split)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -226,33 +232,34 @@ class ABFO(Optimizer):
     ID_LOC_POS = 3
     ID_LOC_FIT = 4
 
-    def __init__(self, problem, epoch=10000, pop_size=100, Ci=(0.1, 0.001), Ped=0.01, Ns=4, N_minmax=(1, 40), **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, C_s=0.1, C_e=0.001, Ped=0.01, Ns=4, N_adapt=2, N_split=40, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
-            Ci (list, tuple): C_s (start), C_e (end)  -=> step size # step size in BFO, default=(0.1, 0.001)
+            C_s (float): step size start, default=0.1
+            C_e (float): step size end, default=0.001
             Ped (float): Probability eliminate, default=0.01
             Ns (int): swim_length, default=4
-            N_minmax (list, tuple): (Dead threshold value, split threshold value), default=(2, 40)
+            N_adapt (int): Dead threshold value default=2
+            N_split (int): Split threshold value, default=40
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.step_size = self.Ci = self.validator.check_tuple_float("Ci (start, end)", Ci, ((0, 2.0), (0, 1.0)))
+        self.C_s = self.Ped = self.validator.check_float("C_s", C_s, (0, 2.0))
+        self.C_e = self.Ped = self.validator.check_float("C_e", C_e, (0, 1.0))
         self.p_eliminate = self.Ped = self.validator.check_float("Ped", Ped, (0, 1.0))
         self.swim_length = self.Ns = self.validator.check_int("Ns", Ns, [2, 100])
-        self.N_minmax = self.validator.check_tuple_int("Threshold value (dead, split)", N_minmax, ([0, 4], [5, 50]))
-
-        self.nfe_per_epoch = self.pop_size
+        self.N_adapt = self.validator.check_int("N_adapt", N_adapt, [0, 4])
+        self.N_split = self.validator.check_int("N_split", N_split, [5, 50])
+        self.set_parameters(["epoch", "pop_size", "C_s", "C_e", "Ped", "Ns", "N_adapt", "N_split"])
+        self.support_parallel_modes = False
         self.sort_flag = False
-        # (Dead threshold value, split threshold value) -> N_adapt, N_split
-        self.N_adapt = self.N_minmax[0]  # Dead threshold value
-        self.N_split = self.N_minmax[1]  # split threshold value
 
-        self.C_s = self.step_size[0] * (self.problem.ub - self.problem.lb)
-        self.C_e = self.step_size[1] * (self.problem.ub - self.problem.lb)
+    def initialize_variables(self):
+        self.C_s = self.C_s * (self.problem.ub - self.problem.lb)
+        self.C_e = self.C_e * (self.problem.ub - self.problem.lb)
 
     def create_solution(self, lb=None, ub=None, pos=None):
         """
@@ -283,7 +290,6 @@ class ABFO(Optimizer):
         Args:
             epoch (int): The current iteration
         """
-        nfe_epoch = 0
         for i in range(0, self.pop_size):
             step_size = self.update_step_size__(self.pop, i)
             for m in range(0, self.swim_length):  # Ns
@@ -294,7 +300,6 @@ class ABFO(Optimizer):
                 pos_new = self.pop[i][self.ID_POS] + step_size * unit_vector
                 pos_new = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
                 target = self.get_target_wrapper(pos_new)
-                nfe_epoch += 1
                 if self.compare_agent([pos_new, target], self.pop[i]):
                     self.pop[i][self.ID_POS] = pos_new
                     self.pop[i][self.ID_TAR] = target
@@ -312,12 +317,10 @@ class ABFO(Optimizer):
                 pos_new = self.amend_position(pos_new, self.problem.lb, self.problem.ub)
                 target = self.get_target_wrapper(pos_new)
                 self.pop.append([pos_new, target, 0, deepcopy(pos_new), deepcopy(target)])
-                nfe_epoch += 1
 
             nut_min = min(self.N_adapt, self.N_adapt + (len(self.pop) - self.pop_size) / self.N_adapt)
             if self.pop[i][self.ID_NUT] < nut_min or np.random.rand() < self.p_eliminate:
                 self.pop[i] = self.create_solution(self.problem.lb, self.problem.ub)
-                nfe_epoch += 1
 
         ## Make sure the population does not have duplicates.
         new_set = set()
@@ -332,7 +335,6 @@ class ABFO(Optimizer):
         if n_agents < 0:
             for idx in range(0, n_agents):
                 self.pop.append(self.create_solution(self.problem.lb, self.problem.ub))
-                nfe_epoch += 1
         elif n_agents > 0:
             list_idx_removed = np.random.choice(range(0, len(self.pop)), n_agents, replace=False)
             pop_new = []
@@ -340,4 +342,3 @@ class ABFO(Optimizer):
                 if idx not in list_idx_removed:
                     pop_new.append(self.pop[idx])
             self.pop = pop_new
-        self.nfe_per_epoch = nfe_epoch

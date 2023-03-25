@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 14:14, 01/03/2021 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -8,7 +8,7 @@ import numpy as np
 from mealpy.optimizer import Optimizer
 
 
-class BaseACOR(Optimizer):
+class OriginalACOR(Optimizer):
     """
     The original version of: Ant Colony Optimization Continuous (ACOR)
 
@@ -18,14 +18,14 @@ class BaseACOR(Optimizer):
     + Amend solution when they went out of space
 
     Hyper-parameters should fine-tune in approximate range to get faster convergence toward the global optimum:
-        + sample_count (int): [2, pop_size/2], Number of Newly Generated Samples, default = 25
+        + sample_count (int): [2, 10000], Number of Newly Generated Samples, default = 25
         + intent_factor (float): [0.2, 1.0], Intensification Factor (Selection Pressure), (q in the paper), default = 0.5
         + zeta (float): [1, 2, 3], Deviation-Distance Ratio, default = 1
 
     Examples
     ~~~~~~~~
     >>> import numpy as np
-    >>> from mealpy.swarm_based.ACOR import BaseACOR
+    >>> from mealpy.swarm_based.ACOR import OriginalACOR
     >>>
     >>> def fitness_function(solution):
     >>>     return np.sum(solution**2)
@@ -39,11 +39,11 @@ class BaseACOR(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> sample_count = 50
+    >>> sample_count = 25
     >>> intent_factor = 0.5
     >>> zeta = 1.0
-    >>> model = BaseACOR(problem_dict1, epoch, pop_size, sample_count, intent_factor, zeta)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalACOR(epoch, pop_size, sample_count, intent_factor, zeta)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -52,23 +52,22 @@ class BaseACOR(Optimizer):
     European journal of operational research, 185(3), pp.1155-1173.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, sample_count=25, intent_factor=0.5, zeta=1.0, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, sample_count=25, intent_factor=0.5, zeta=1.0, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
             sample_count (int): Number of Newly Generated Samples, default = 25
             intent_factor (float): Intensification Factor (Selection Pressure) (q in the paper), default = 0.5
             zeta (float): Deviation-Distance Ratio, default = 1.0
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.sample_count = self.validator.check_int("sample_count", sample_count, [2, int(self.pop_size/2)])
+        self.sample_count = self.validator.check_int("sample_count", sample_count, [2, 10000])
         self.intent_factor = self.validator.check_float("intent_factor", intent_factor, (0, 1.0))
         self.zeta = self.validator.check_float("zeta", zeta, (0, 5))
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size", "sample_count", "intent_factor", "zeta"])
         self.sort_flag = True
 
     def evolve(self, epoch):
@@ -78,7 +77,6 @@ class BaseACOR(Optimizer):
         Args:
             epoch (int): The current iteration
         """
-        self.nfe_per_epoch = self.pop_size + self.sample_count
         # Calculate Selection Probabilities
         pop_rank = np.array([i for i in range(1, self.pop_size + 1)])
         qn = self.intent_factor * self.pop_size

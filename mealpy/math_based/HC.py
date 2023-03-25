@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 10:08, 02/03/2021 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -38,8 +38,8 @@ class OriginalHC(Optimizer):
     >>> epoch = 1000
     >>> pop_size = 50
     >>> neighbour_size = 50
-    >>> model = OriginalHC(problem_dict1, epoch, pop_size, neighbour_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalHC(epoch, pop_size, neighbour_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -48,19 +48,18 @@ class OriginalHC(Optimizer):
     outperform hill climbing. Advances in neural information processing systems, 6.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, neighbour_size=50, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, neighbour_size=50, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
             neighbour_size (int): fixed parameter, sensitive exploitation parameter, Default: 50
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
         self.neighbour_size = self.validator.check_int("neighbour_size", neighbour_size, [2, self.pop_size])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size", "neighbour_size"])
         self.sort_flag = False
 
     def evolve(self, epoch):
@@ -70,7 +69,6 @@ class OriginalHC(Optimizer):
         Args:
             epoch (int): The current iteration
         """
-        self.nfe_per_epoch = self.neighbour_size
         step_size = np.mean(self.problem.ub - self.problem.lb) * np.exp(-2 * (epoch + 1) / self.epoch)
         pop_neighbours = []
         for idx in range(0, self.neighbour_size):
@@ -83,9 +81,9 @@ class OriginalHC(Optimizer):
         self.pop = pop_neighbours
 
 
-class BaseHC(Optimizer):
+class SwarmHC(Optimizer):
     """
-    My changed version of: Swarm-based Hill Climbing (S-HC)
+    The developed version: Swarm-based Hill Climbing (S-HC)
 
     Notes
     ~~~~~
@@ -102,7 +100,7 @@ class BaseHC(Optimizer):
     Examples
     ~~~~~~~~
     >>> import numpy as np
-    >>> from mealpy.math_based.HC import BaseHC
+    >>> from mealpy.math_based.HC import SwarmHC
     >>>
     >>> def fitness_function(solution):
     >>>     return np.sum(solution**2)
@@ -116,24 +114,24 @@ class BaseHC(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> neighbour_size = 50
-    >>> model = BaseHC(problem_dict1, epoch, pop_size, neighbour_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> neighbour_size = 10
+    >>> model = SwarmHC(epoch, pop_size, neighbour_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, neighbour_size=10, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, neighbour_size=10, **kwargs):
         """
         Args:
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
             neighbour_size (int): fixed parameter, sensitive exploitation parameter, Default: 10
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
         self.neighbour_size = self.validator.check_int("neighbour_size", neighbour_size, [2, int(self.pop_size/2)])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size", "neighbour_size"])
         self.sort_flag = False
 
     def evolve(self, epoch):

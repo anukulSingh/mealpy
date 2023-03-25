@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 14:51, 17/03/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -9,7 +9,7 @@ from copy import deepcopy
 from mealpy.optimizer import Optimizer
 
 
-class BaseSRSR(Optimizer):
+class OriginalSRSR(Optimizer):
     """
     The original version of: Swarm Robotics Search And Rescue (SRSR)
 
@@ -19,7 +19,7 @@ class BaseSRSR(Optimizer):
     Examples
     ~~~~~~~~
     >>> import numpy as np
-    >>> from mealpy.swarm_based.SRSR import BaseSRSR
+    >>> from mealpy.swarm_based.SRSR import OriginalSRSR
     >>>
     >>> def fitness_function(solution):
     >>>     return np.sum(solution**2)
@@ -33,8 +33,8 @@ class BaseSRSR(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = BaseSRSR(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalSRSR(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -51,17 +51,16 @@ class BaseSRSR(Optimizer):
     ID_FIT_NEW = 5
     ID_FIT_MOVE = 6
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size"])
         self.sort_flag = True
 
     def create_solution(self, lb=None, ub=None, pos=None):
@@ -82,8 +81,7 @@ class BaseSRSR(Optimizer):
         target_move = 0
         return [position, target, mu, sigma, x_new, target_new, target_move]
 
-    def after_initialization(self):
-        self.pop, self.g_best = self.get_global_best_solution(self.pop)
+    def initialize_variables(self):
         # Control Parameters Of Algorithm
         # ==============================================================================================
         #  [c1] movement_factor : Determines Movement Pace Of Robots During Exploration Policy
@@ -107,7 +105,6 @@ class BaseSRSR(Optimizer):
         # ========================================================================================= %%
         #            PHASE 1 (ACCUMULATION): CALCULATING Mu AND SIGMA values FOR SOLUTIONS            %
         # ===========================================================================================%%
-        nfe_epoch = 0
         # ------ CALCULATING MU AND SIGMA FOR MASTER ROBOT ----------
         self.pop[0][self.ID_SIGMA] = np.random.uniform()
         if epoch % 2 == 1:
@@ -134,7 +131,6 @@ class BaseSRSR(Optimizer):
             if self.mode not in self.AVAILABLE_MODES:
                 pop_new[-1][self.ID_TAR] = self.get_target_wrapper(pos_new)
         pop_new = self.update_target_wrapper_population(pop_new)
-        nfe_epoch += self.pop_size
 
         for idx in range(0, self.pop_size):
             # --------- Calculate Degree Of Cost Movement Of Robots During Movement --------------
@@ -175,7 +171,6 @@ class BaseSRSR(Optimizer):
             if self.mode not in self.AVAILABLE_MODES:
                 pop_new[-1][self.ID_TAR] = self.get_target_wrapper(pos_new)
         pop_new = self.update_target_wrapper_population(pop_new)
-        nfe_epoch += self.pop_size
 
         for idx in range(0, self.pop_size):
             # --------- Calculate Degree Of Cost Movement Of Robots During Movement --------------
@@ -250,10 +245,8 @@ class BaseSRSR(Optimizer):
                 if self.mode not in self.AVAILABLE_MODES:
                     pop_workers[-1][self.ID_TAR] = self.get_target_wrapper(pos_new)
             pop_workers = self.update_target_wrapper_population(pop_workers)
-            nfe_epoch += 5
 
             for i in range(0, 5):
                 if self.compare_agent(pop_workers[i], self.pop[1]):
                     self.pop[-(i + 1)][self.ID_POS] = deepcopy(pop_workers[i][self.ID_POS])
                     self.pop[-(i + 1)][self.ID_TAR] = deepcopy(pop_workers[i][self.ID_TAR])
-            self.nfe_per_epoch = nfe_epoch

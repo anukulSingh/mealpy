@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 16:30, 16/11/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -10,12 +10,7 @@ from mealpy.optimizer import Optimizer
 
 class BaseJA(Optimizer):
     """
-    My changed version of: Jaya Algorithm (JA)
-
-    Notes
-    ~~~~~
-    + All third loops are removed
-    + Change the second random variable r2 to Gaussian instead of Uniform
+    The developed version: Jaya Algorithm (JA)
 
     Examples
     ~~~~~~~~
@@ -34,8 +29,8 @@ class BaseJA(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = BaseJA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = BaseJA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -44,17 +39,16 @@ class BaseJA(Optimizer):
     unconstrained optimization problems. International Journal of Industrial Engineering Computations, 7(1), pp.19-34.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size"])
         self.sort_flag = False
 
     def evolve(self, epoch):
@@ -104,8 +98,8 @@ class OriginalJA(BaseJA):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = OriginalJA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalJA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -114,14 +108,13 @@ class OriginalJA(BaseJA):
     unconstrained optimization problems. International Journal of Industrial Engineering Computations, 7(1), pp.19-34.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, epoch, pop_size, **kwargs)
+        super().__init__(epoch, pop_size, **kwargs)
 
     def evolve(self, epoch):
         """
@@ -175,8 +168,8 @@ class LevyJA(BaseJA):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = LevyJA(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = LevyJA(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -185,15 +178,13 @@ class LevyJA(BaseJA):
     algorithm with Lévy flight. Expert Systems with Applications, 165, p.113902.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, epoch, pop_size, **kwargs)
-        self.nfe_per_epoch = pop_size
+        super().__init__(epoch, pop_size, **kwargs)
         self.sort_flag = False
 
     def evolve(self, epoch):

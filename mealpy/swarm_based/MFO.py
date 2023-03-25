@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # Created by "Thieu" at 11:59, 17/03/2020 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
@@ -11,7 +11,7 @@ from mealpy.optimizer import Optimizer
 
 class BaseMFO(Optimizer):
     """
-    My changed version of: Moth-Flame Optimization (MFO)
+    The developed version: Moth-Flame Optimization (MFO)
 
     Notes
     ~~~~~
@@ -35,8 +35,8 @@ class BaseMFO(Optimizer):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = BaseMFO(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = BaseMFO(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -45,17 +45,16 @@ class BaseMFO(Optimizer):
     heuristic paradigm. Knowledge-based systems, 89, pp.228-249.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, kwargs)
+        super().__init__(**kwargs)
         self.epoch = self.validator.check_int("epoch", epoch, [1, 100000])
         self.pop_size = self.validator.check_int("pop_size", pop_size, [10, 10000])
-        self.nfe_per_epoch = self.pop_size
+        self.set_parameters(["epoch", "pop_size"])
         self.sort_flag = False
 
     def evolve(self, epoch):
@@ -125,8 +124,8 @@ class OriginalMFO(BaseMFO):
     >>>
     >>> epoch = 1000
     >>> pop_size = 50
-    >>> model = OriginalMFO(problem_dict1, epoch, pop_size)
-    >>> best_position, best_fitness = model.solve()
+    >>> model = OriginalMFO(epoch, pop_size)
+    >>> best_position, best_fitness = model.solve(problem_dict1)
     >>> print(f"Solution: {best_position}, Fitness: {best_fitness}")
 
     References
@@ -135,16 +134,13 @@ class OriginalMFO(BaseMFO):
     heuristic paradigm. Knowledge-based systems, 89, pp.228-249.
     """
 
-    def __init__(self, problem, epoch=10000, pop_size=100, **kwargs):
+    def __init__(self, epoch=10000, pop_size=100, **kwargs):
         """
         Args:
-            problem (dict): The problem dictionary
             epoch (int): maximum number of iterations, default = 10000
             pop_size (int): number of population size, default = 100
         """
-        super().__init__(problem, epoch, pop_size, **kwargs)
-        self.nfe_per_epoch = self.pop_size
-        self.sort_flag = False
+        super().__init__(epoch, pop_size, **kwargs)
 
     def evolve(self, epoch):
         """
